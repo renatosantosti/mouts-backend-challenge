@@ -46,6 +46,35 @@ These business rules define quantity-based discounting tiers and limitations:
    - Maximum limit: 20 items per product
    - No discounts allowed for quantities below 4 items
 
+### Sales domain: technical and product assumptions
+
+The following rules are **implementation decisions** for the Sales aggregate (not all are spelled out in the challenge text). They are intentionally **simple** so the model matches what the evaluation brief implies, without extra workflows not required by the spec.
+
+1. **External identities**  
+   Customer, branch, and product are referenced only by **identifier + denormalized name** on the sale and line items. Other bounded contexts are not loaded inside the domain model.
+
+2. **One active line per product on the sale**  
+   There is at most **one non-cancelled line** per `ProductId` on a given sale. You do **not** create a second active line for the same product while an active line already exists.
+
+   **Cancelled line:** If the only line for that `ProductId` is **cancelled** (logical cancellation), a later `AddItem` for the same product **creates a new active line**—the same as adding that product for the first time after the previous line was cancelled. Older cancelled rows remain in the aggregate only for history.
+
+3. **Input validation (`AddItem`)**  
+   The domain rejects invalid commands: **quantity must be greater than zero**, and **unit price must be greater than zero** (aligned with `SaleItem` rules).
+
+4. **Adding the same product again when an active line already exists**  
+   - **Sum** the new quantity into the existing line’s quantity.  
+   - Set **unit price** and **product name** to the values from **this** `AddItem` call (last call wins).  
+   - **No** cancelling and recreating the line when the price changes—**update the same line in place** and run discount/total logic again.  
+   - If the **resulting** quantity would exceed **20**, the operation fails with a domain error (same “max 20 identical items” rule as in the brief).  
+   Discount tiers apply to the **final** quantity and current unit price on that line.
+
+5. **Discounts**  
+   Computed **inside the domain** per line from `quantity × unit price`, using the tiers in the brief. Money rounding is fixed in code (e.g. two decimal places) for reproducibility.
+
+6. **Domain events**  
+   - A successful **`AddItem`** results in a **`SaleModified`** event (one per successful add).  
+   Other events (`SaleCreated`, `SaleCancelled`, `ItemCancelled`, etc.) follow the aggregate behavior described in code; handlers can log or forward them without requiring a message broker for the prototype.
+
 ## Overview
 This section provides a high-level overview of the project and the various skills and competencies it aims to assess for developer candidates. 
 
