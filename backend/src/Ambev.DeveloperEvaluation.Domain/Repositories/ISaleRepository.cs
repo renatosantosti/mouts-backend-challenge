@@ -5,6 +5,10 @@ namespace Ambev.DeveloperEvaluation.Domain.Repositories;
 /// <summary>
 /// Persistence abstraction for <see cref="Sale"/> aggregate.
 /// </summary>
+/// <remarks>
+/// Application code should load with <see cref="GetByIdReadOnlyAsync"/> for queries and with
+/// <see cref="GetByIdForUpdateAsync"/> followed by <see cref="UpdateAsync"/> when mutating the aggregate.
+/// </remarks>
 public interface ISaleRepository
 {
     Task<Sale> CreateAsync(Sale sale, CancellationToken cancellationToken = default);
