@@ -20,31 +20,30 @@ public class SaleRepository : ISaleRepository
         return sale;
     }
 
-    public async Task<Sale?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<Sale?> GetByIdForUpdateAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await _context.Sales
             .Include(s => s.Items)
             .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
     }
 
-    public async Task<Sale> UpdateAsync(Sale sale, CancellationToken cancellationToken = default)
+    public async Task<Sale?> GetByIdReadOnlyAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        _context.Sales.Update(sale);
-        await _context.SaveChangesAsync(cancellationToken);
-        return sale;
+        return await _context.Sales
+            .AsNoTracking()
+            .Include(s => s.Items)
+            .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
     }
 
-    [Obsolete("Use sale cancellation in domain/application flows. Physical delete is legacy compatibility.")]
-    public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<Sale> UpdateAsync(Sale sale, CancellationToken cancellationToken = default)
     {
-        // Legacy compatibility path: business flow for Sales should prefer Cancel() at aggregate level.
-        var sale = await _context.Sales.FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
-        if (sale is null)
-            return false;
+        if (_context.Entry(sale).State == EntityState.Detached)
+        {
+            _context.Sales.Update(sale);
+        }
 
-        _context.Sales.Remove(sale);
         await _context.SaveChangesAsync(cancellationToken);
-        return true;
+        return sale;
     }
 
     public async Task<(IReadOnlyList<Sale> Items, int TotalCount)> ListAsync(
