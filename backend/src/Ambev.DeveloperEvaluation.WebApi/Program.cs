@@ -1,4 +1,5 @@
 using Ambev.DeveloperEvaluation.Application;
+using AutoMapper;
 using Ambev.DeveloperEvaluation.Common.HealthChecks;
 using Ambev.DeveloperEvaluation.Common.Logging;
 using Ambev.DeveloperEvaluation.Common.Security;
@@ -40,7 +41,10 @@ public class Program
 
             builder.RegisterDependencies();
 
-            builder.Services.AddAutoMapper(typeof(Program).Assembly, typeof(ApplicationLayer).Assembly);
+            builder.Services.AddAutoMapper(cfg =>
+            {
+                cfg.AddMaps(typeof(Program).Assembly, typeof(ApplicationLayer).Assembly);
+            });
 
             builder.Services.AddMediatR(cfg =>
             {
