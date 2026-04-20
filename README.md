@@ -74,6 +74,7 @@ The following rules are **implementation decisions** for the Sales aggregate (no
 6. **Domain events**  
    - A successful **`AddItem`** results in a **`SaleModified`** event (one per successful add).  
    Other events (`SaleCreated`, `SaleCancelled`, `ItemCancelled`, etc.) follow the aggregate behavior described in code; handlers can log or forward them without requiring a message broker for the prototype.
+   - In this implementation, event publication is intentionally simulated with structured application logs (`SimulatedSalesEventBroker.PublishAndClear`) after successful persistence in sales handlers (no broker integration required by the challenge).
 
 ## Overview
 This section provides a high-level overview of the project and the various skills and competencies it aims to assess for developer candidates. 
