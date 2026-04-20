@@ -85,6 +85,14 @@ This section lists the key technologies used in the project, including the backe
 
 See [Tech Stack](/.doc/tech-stack.md)
 
+## Technical decisions (application layer)
+
+**MediatR validation pipeline.** Application requests are validated by FluentValidation **before** handlers run: validators are registered via `AddValidatorsFromAssembly` on the Application assembly, and `ValidationBehavior` runs them through the MediatR pipeline. Handlers do not instantiate validators manually. This keeps a single validation path and matches the registered `IPipelineBehavior`.
+
+**CQRS naming.** Read operations use `*Query` types (e.g. `GetUserQuery`, `GetSaleByIdQuery`) and writes use `*Command`, consistent across features.
+
+For the full rationale, glossary, and verification notes, see [MediatR and validation (application layer)](/.doc/mediatr-validation.md).
+
 ## Frameworks
 This section outlines the frameworks and libraries that are leveraged in the project to enhance development productivity and maintainability. 
 

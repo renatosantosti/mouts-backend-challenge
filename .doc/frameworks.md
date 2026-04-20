@@ -9,6 +9,7 @@ We use the following frameworks in this project:
 
 Backend:
 - **Mediator**: A behavioral design pattern that helps reduce chaotic dependencies between objects. It allows loose coupling by encapsulating object interaction.
+- **MediatR** (library): We use the MediatR package for in-process request dispatching; FluentValidation is wired through the pipeline. See [MediatR and validation (application layer)](./mediatr-validation.md).
   - Git: https://github.com/jbogard/MediatR
 - **Automapper**: A convention-based object-object mapper that simplifies the process of mapping one object to another.
   - Git: https://github.com/AutoMapper/AutoMapper
