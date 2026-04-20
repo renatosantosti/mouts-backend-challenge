@@ -4,9 +4,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Ambev.DeveloperEvaluation.Application.Sales;
 
-internal static class SaleDomainEventLogger
+internal static class SimulatedSalesEventBroker
 {
-    public static void LogAndClear(ILogger logger, Sale sale)
+    public static void PublishAndClear(ILogger logger, Sale sale)
     {
         foreach (var domainEvent in sale.DomainEvents)
         {
@@ -14,26 +14,28 @@ internal static class SaleDomainEventLogger
             {
                 case SaleCreatedEvent e:
                     logger.LogInformation(
-                        "Domain event SaleCreated: SaleId={SaleId}, SaleNumber={SaleNumber}, OccurredOn={OccurredOn}",
+                        "Simulated broker publish SaleCreated: SaleId={SaleId}, SaleNumber={SaleNumber}, OccurredOn={OccurredOn}",
                         e.SaleId, e.SaleNumber, e.OccurredOn);
                     break;
                 case SaleModifiedEvent e:
                     logger.LogInformation(
-                        "Domain event SaleModified: SaleId={SaleId}, TotalAmount={TotalAmount}, OccurredOn={OccurredOn}",
+                        "Simulated broker publish SaleModified: SaleId={SaleId}, TotalAmount={TotalAmount}, OccurredOn={OccurredOn}",
                         e.SaleId, e.TotalAmountAfterChange, e.OccurredOn);
                     break;
                 case SaleCancelledEvent e:
                     logger.LogInformation(
-                        "Domain event SaleCancelled: SaleId={SaleId}, OccurredOn={OccurredOn}",
+                        "Simulated broker publish SaleCancelled: SaleId={SaleId}, OccurredOn={OccurredOn}",
                         e.SaleId, e.OccurredOn);
                     break;
                 case ItemCancelledEvent e:
                     logger.LogInformation(
-                        "Domain event ItemCancelled: SaleId={SaleId}, SaleItemId={SaleItemId}, OccurredOn={OccurredOn}",
+                        "Simulated broker publish ItemCancelled: SaleId={SaleId}, SaleItemId={SaleItemId}, OccurredOn={OccurredOn}",
                         e.SaleId, e.SaleItemId, e.OccurredOn);
                     break;
                 default:
-                    logger.LogInformation("Domain event {EventType}", domainEvent.GetType().Name);
+                    logger.LogInformation(
+                        "Simulated broker publish {EventType}",
+                        domainEvent.GetType().Name);
                     break;
             }
         }

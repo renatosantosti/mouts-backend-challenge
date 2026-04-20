@@ -36,7 +36,7 @@ public sealed class CreateSaleHandler : IRequestHandler<CreateSaleCommand, SaleR
 
         await _saleRepository.CreateAsync(sale, cancellationToken);
 
-        SaleDomainEventLogger.LogAndClear(_logger, sale);
+        SimulatedSalesEventBroker.PublishAndClear(_logger, sale);
 
         return _mapper.Map<SaleResponse>(sale);
     }

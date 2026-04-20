@@ -43,7 +43,7 @@ public sealed class CancelSaleItemHandler : IRequestHandler<CancelSaleItemComman
 
         await _saleRepository.UpdateAsync(sale, cancellationToken);
 
-        SaleDomainEventLogger.LogAndClear(_logger, sale);
+        SimulatedSalesEventBroker.PublishAndClear(_logger, sale);
 
         return _mapper.Map<SaleResponse>(sale);
     }

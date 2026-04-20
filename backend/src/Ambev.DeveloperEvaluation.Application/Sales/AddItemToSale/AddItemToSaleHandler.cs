@@ -33,7 +33,7 @@ public sealed class AddItemToSaleHandler : IRequestHandler<AddItemToSaleCommand,
 
         await _saleRepository.UpdateAsync(sale, cancellationToken);
 
-        SaleDomainEventLogger.LogAndClear(_logger, sale);
+        SimulatedSalesEventBroker.PublishAndClear(_logger, sale);
 
         return _mapper.Map<SaleResponse>(sale);
     }
