@@ -33,12 +33,12 @@ public sealed class MongoSaleEventHistoryRepository : ISaleEventHistoryWriter, I
 
         var docs = events.Select(x => new SaleHistoryEventDocument
         {
-            SaleId = x.SaleId,
+            SaleId = x.SaleId.ToString(),
             EventType = x.EventType,
             OccurredOn = x.OccurredOn,
             SaleNumber = x.SaleNumber,
             TotalAmount = x.TotalAmount,
-            SaleItemId = x.SaleItemId
+            SaleItemId = x.SaleItemId?.ToString()
         });
 
         await _collection.InsertManyAsync(docs, cancellationToken: cancellationToken);
@@ -47,18 +47,18 @@ public sealed class MongoSaleEventHistoryRepository : ISaleEventHistoryWriter, I
     public async Task<IReadOnlyList<SaleHistoryEvent>> ListBySaleIdAsync(Guid saleId, CancellationToken cancellationToken)
     {
         var docs = await _collection
-            .Find(x => x.SaleId == saleId)
+            .Find(x => x.SaleId == saleId.ToString())
             .SortByDescending(x => x.OccurredOn)
             .ToListAsync(cancellationToken);
 
         return docs.Select(x => new SaleHistoryEvent
         {
-            SaleId = x.SaleId,
+            SaleId = Guid.TryParse(x.SaleId, out var parsedSaleId) ? parsedSaleId : Guid.Empty,
             EventType = x.EventType,
             OccurredOn = x.OccurredOn,
             SaleNumber = x.SaleNumber,
             TotalAmount = x.TotalAmount,
-            SaleItemId = x.SaleItemId
+            SaleItemId = Guid.TryParse(x.SaleItemId, out var parsedSaleItemId) ? parsedSaleItemId : null
         }).ToArray();
     }
 
@@ -91,11 +91,11 @@ public sealed class MongoSaleEventHistoryRepository : ISaleEventHistoryWriter, I
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; init; } = string.Empty;
 
-        public Guid SaleId { get; init; }
+        public string SaleId { get; init; } = string.Empty;
         public string EventType { get; init; } = string.Empty;
         public DateTime OccurredOn { get; init; }
         public string? SaleNumber { get; init; }
         public decimal? TotalAmount { get; init; }
-        public Guid? SaleItemId { get; init; }
+        public string? SaleItemId { get; init; }
     }
 }
