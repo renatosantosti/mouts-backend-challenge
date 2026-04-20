@@ -1,6 +1,8 @@
 using Ambev.DeveloperEvaluation.Application.Sales;
 using Ambev.DeveloperEvaluation.Application.Sales.Common;
+using Ambev.DeveloperEvaluation.Domain.Entities;
 using Ambev.DeveloperEvaluation.Domain.Events;
+using Ambev.DeveloperEvaluation.Domain.Repositories;
 using Ambev.DeveloperEvaluation.ORM;
 using Ambev.DeveloperEvaluation.ORM.Repositories;
 using Ambev.DeveloperEvaluation.WebApi;
@@ -28,6 +30,8 @@ public sealed class SalesApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<ISaleEventHistoryWriter>();
             services.RemoveAll<ISaleEventHistoryReader>();
             services.RemoveAll<ISaleEventHistoryRecorder>();
+            services.RemoveAll<IUserRepository>();
+            services.RemoveAll<UserRepository>();
 
             services.AddDbContext<DefaultContext>(options =>
             {
@@ -37,6 +41,8 @@ public sealed class SalesApiFactory : WebApplicationFactory<Program>
             services.AddScoped<ISaleEventHistoryWriter>(provider => provider.GetRequiredService<InMemorySaleHistoryStore>());
             services.AddScoped<ISaleEventHistoryReader>(provider => provider.GetRequiredService<InMemorySaleHistoryStore>());
             services.AddScoped<ISaleEventHistoryRecorder>(provider => provider.GetRequiredService<InMemorySaleHistoryStore>());
+            services.AddSingleton<InMemoryUserRepository>();
+            services.AddScoped<IUserRepository>(provider => provider.GetRequiredService<InMemoryUserRepository>());
 
             using var serviceProvider = services.BuildServiceProvider();
             using var scope = serviceProvider.CreateScope();
@@ -125,6 +131,65 @@ public sealed class SalesApiFactory : WebApplicationFactory<Program>
                     EventType = domainEvent.GetType().Name,
                     OccurredOn = DateTime.UtcNow
                 }
+            };
+        }
+    }
+
+    private sealed class InMemoryUserRepository : IUserRepository
+    {
+        private readonly Dictionary<Guid, User> _users = [];
+        private readonly object _lock = new();
+
+        public Task<User> CreateAsync(User user, CancellationToken cancellationToken = default)
+        {
+            lock (_lock)
+            {
+                var userId = user.Id == Guid.Empty ? Guid.NewGuid() : user.Id;
+                var created = Clone(user);
+                created.Id = userId;
+                _users[userId] = created;
+                return Task.FromResult(Clone(created));
+            }
+        }
+
+        public Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+        {
+            lock (_lock)
+            {
+                return Task.FromResult(_users.TryGetValue(id, out var user) ? Clone(user) : null);
+            }
+        }
+
+        public Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
+        {
+            lock (_lock)
+            {
+                var user = _users.Values.FirstOrDefault(x => x.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
+                return Task.FromResult(user is null ? null : Clone(user));
+            }
+        }
+
+        public Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+        {
+            lock (_lock)
+            {
+                return Task.FromResult(_users.Remove(id));
+            }
+        }
+
+        private static User Clone(User source)
+        {
+            return new User
+            {
+                Id = source.Id,
+                Username = source.Username,
+                Email = source.Email,
+                Phone = source.Phone,
+                Password = source.Password,
+                Status = source.Status,
+                Role = source.Role,
+                CreatedAt = source.CreatedAt,
+                UpdatedAt = source.UpdatedAt
             };
         }
     }

@@ -92,6 +92,33 @@ public sealed class SalesEndpointsTests : IClassFixture<SalesApiFactory>
         json.RootElement.GetProperty("isCancelled").GetBoolean().Should().BeFalse();
     }
 
+    [Fact]
+    public async Task GetSaleHistory_ShouldReturnCreatedAndModifiedEvents()
+    {
+        var saleId = await CreateSaleAsync($"S-{Guid.NewGuid():N}");
+        await AddItemAsync(saleId, Guid.NewGuid(), "History Item", 4, 10m);
+
+        var response = await _client.GetAsync($"/api/sales/{saleId}/history");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var json = await ReadJsonAsync(response);
+        var historyItems = json.RootElement.GetProperty("data").EnumerateArray().ToList();
+        historyItems.Should().NotBeEmpty();
+        historyItems.Should().OnlyContain(item => item.GetProperty("saleId").GetGuid() == saleId);
+        historyItems.Should().Contain(item => item.GetProperty("eventType").GetString() == "SaleCreatedEvent");
+        historyItems.Should().Contain(item => item.GetProperty("eventType").GetString() == "SaleModifiedEvent");
+    }
+
+    [Fact]
+    public async Task GetSaleHistory_WhenSaleHasNoEvents_ShouldReturnEmptyData()
+    {
+        var response = await _client.GetAsync($"/api/sales/{Guid.NewGuid()}/history");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var json = await ReadJsonAsync(response);
+        json.RootElement.GetProperty("data").EnumerateArray().Should().BeEmpty();
+    }
+
     // DiscountRules
     [Fact]
     public async Task AddItem_QuantityBelow4_ShouldApplyNoDiscount()
