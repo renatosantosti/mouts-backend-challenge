@@ -6,7 +6,7 @@ using Ambev.DeveloperEvaluation.Domain.Repositories;
 using Ambev.DeveloperEvaluation.Unit.Domain.Entities.TestData;
 using AutoMapper;
 using FluentAssertions;
-using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging;
 using NSubstitute;
 using Xunit;
 
@@ -16,11 +16,12 @@ public class AddItemToSaleHandlerTests
 {
     private readonly ISaleRepository _saleRepository = Substitute.For<ISaleRepository>();
     private readonly IMapper _mapper = Substitute.For<IMapper>();
+    private readonly ILogger<AddItemToSaleHandler> _logger = Substitute.For<ILogger<AddItemToSaleHandler>>();
     private readonly AddItemToSaleHandler _handler;
 
     public AddItemToSaleHandlerTests()
     {
-        _handler = new AddItemToSaleHandler(_saleRepository, _mapper, NullLogger<AddItemToSaleHandler>.Instance);
+        _handler = new AddItemToSaleHandler(_saleRepository, _mapper, _logger);
     }
 
     [Fact]
@@ -69,7 +70,14 @@ public class AddItemToSaleHandlerTests
         item.Quantity.Should().Be(5);
         item.UnitPrice.Should().Be(12m);
         item.ProductName.Should().Be("New Name");
+        sale.DomainEvents.Should().BeEmpty();
         await _saleRepository.Received(1).UpdateAsync(sale, Arg.Any<CancellationToken>());
+        _logger.Received().Log(
+            LogLevel.Information,
+            Arg.Any<EventId>(),
+            Arg.Is<object>(state => state.ToString()!.Contains("Simulated broker publish SaleModified")),
+            Arg.Any<Exception>(),
+            Arg.Any<Func<object, Exception?, string>>());
     }
 
     [Fact]

@@ -6,7 +6,7 @@ using Ambev.DeveloperEvaluation.Domain.Repositories;
 using Ambev.DeveloperEvaluation.Unit.Domain.Entities.TestData;
 using AutoMapper;
 using FluentAssertions;
-using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging;
 using NSubstitute;
 using Xunit;
 
@@ -16,11 +16,12 @@ public class CancelSaleItemHandlerTests
 {
     private readonly ISaleRepository _saleRepository = Substitute.For<ISaleRepository>();
     private readonly IMapper _mapper = Substitute.For<IMapper>();
+    private readonly ILogger<CancelSaleItemHandler> _logger = Substitute.For<ILogger<CancelSaleItemHandler>>();
     private readonly CancelSaleItemHandler _handler;
 
     public CancelSaleItemHandlerTests()
     {
-        _handler = new CancelSaleItemHandler(_saleRepository, _mapper, NullLogger<CancelSaleItemHandler>.Instance);
+        _handler = new CancelSaleItemHandler(_saleRepository, _mapper, _logger);
     }
 
     [Fact]
@@ -54,8 +55,15 @@ public class CancelSaleItemHandlerTests
 
         result.Should().BeSameAs(dto);
         sale.Items.Single(i => i.Id == itemId).IsCancelled.Should().BeTrue();
+        sale.DomainEvents.Should().BeEmpty();
         await _saleRepository.Received(1).UpdateAsync(sale, Arg.Any<CancellationToken>());
         await _saleRepository.DidNotReceive().GetByIdReadOnlyAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        _logger.Received().Log(
+            LogLevel.Information,
+            Arg.Any<EventId>(),
+            Arg.Is<object>(state => state.ToString()!.Contains("Simulated broker publish ItemCancelled")),
+            Arg.Any<Exception>(),
+            Arg.Any<Func<object, Exception?, string>>());
     }
 
     [Fact]
