@@ -3,6 +3,7 @@ using Ambev.DeveloperEvaluation.Application.Sales.CancelSale;
 using Ambev.DeveloperEvaluation.Application.Sales.CancelSaleItem;
 using Ambev.DeveloperEvaluation.Application.Sales.CreateSale;
 using Ambev.DeveloperEvaluation.Application.Sales.GetSaleById;
+using Ambev.DeveloperEvaluation.Application.Sales.GetSaleHistory;
 using Ambev.DeveloperEvaluation.Application.Sales.ListSales;
 using Ambev.DeveloperEvaluation.WebApi.Common;
 using Ambev.DeveloperEvaluation.WebApi.Features.Sales.AddItem;
@@ -75,6 +76,24 @@ public sealed class SalesController : ControllerBase
     {
         var response = await _mediator.Send(new GetSaleByIdQuery(id), cancellationToken);
         return Ok(_mapper.Map<SaleResponse>(response));
+    }
+
+    /// <summary>
+    /// Retrieves history events for a sale.
+    /// </summary>
+    /// <param name="id">Sale identifier.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Sale history timeline from MongoDB.</returns>
+    [HttpGet("{id:guid}/history")]
+    [ProducesResponseType(typeof(SaleHistoryResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> GetSaleHistory([FromRoute] Guid id, CancellationToken cancellationToken)
+    {
+        var events = await _mediator.Send(new GetSaleHistoryQuery(id), cancellationToken);
+        return Ok(new SaleHistoryResponse
+        {
+            Data = _mapper.Map<IReadOnlyList<SaleHistoryEventResponse>>(events)
+        });
     }
 
     /// <summary>

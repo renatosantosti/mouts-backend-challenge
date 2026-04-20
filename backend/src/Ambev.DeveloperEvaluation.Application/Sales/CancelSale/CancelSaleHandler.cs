@@ -12,15 +12,18 @@ public sealed class CancelSaleHandler : IRequestHandler<CancelSaleCommand, SaleR
     private readonly ISaleRepository _saleRepository;
     private readonly IMapper _mapper;
     private readonly ISaleEventPublisher _eventPublisher;
+    private readonly ISaleEventHistoryRecorder _historyRecorder;
 
     public CancelSaleHandler(
         ISaleRepository saleRepository,
         IMapper mapper,
-        ISaleEventPublisher eventPublisher)
+        ISaleEventPublisher eventPublisher,
+        ISaleEventHistoryRecorder historyRecorder)
     {
         _saleRepository = saleRepository;
         _mapper = mapper;
         _eventPublisher = eventPublisher;
+        _historyRecorder = historyRecorder;
     }
 
     public async Task<SaleResponse> Handle(CancelSaleCommand request, CancellationToken cancellationToken)
@@ -35,6 +38,7 @@ public sealed class CancelSaleHandler : IRequestHandler<CancelSaleCommand, SaleR
 
         IReadOnlyCollection<IDomainEvent> eventsSnapshot = sale.DomainEvents.ToArray();
         await _eventPublisher.PublishAsync(eventsSnapshot, cancellationToken);
+        await _historyRecorder.RecordAsync(eventsSnapshot, cancellationToken);
         sale.ClearDomainEvents();
 
         return _mapper.Map<SaleResponse>(sale);

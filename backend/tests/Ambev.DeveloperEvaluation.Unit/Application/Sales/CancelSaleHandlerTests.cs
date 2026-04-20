@@ -18,11 +18,12 @@ public class CancelSaleHandlerTests
     private readonly ISaleRepository _saleRepository = Substitute.For<ISaleRepository>();
     private readonly IMapper _mapper = Substitute.For<IMapper>();
     private readonly ISaleEventPublisher _eventPublisher = Substitute.For<ISaleEventPublisher>();
+    private readonly ISaleEventHistoryRecorder _historyRecorder = Substitute.For<ISaleEventHistoryRecorder>();
     private readonly CancelSaleHandler _handler;
 
     public CancelSaleHandlerTests()
     {
-        _handler = new CancelSaleHandler(_saleRepository, _mapper, _eventPublisher);
+        _handler = new CancelSaleHandler(_saleRepository, _mapper, _eventPublisher, _historyRecorder);
     }
 
     [Fact]
@@ -56,6 +57,9 @@ public class CancelSaleHandlerTests
         await _saleRepository.Received(1).UpdateAsync(sale, Arg.Any<CancellationToken>());
         await _saleRepository.DidNotReceive().GetByIdReadOnlyAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
         await _eventPublisher.Received(1).PublishAsync(
+            Arg.Is<IReadOnlyCollection<IDomainEvent>>(events => events.Count > 0),
+            Arg.Any<CancellationToken>());
+        await _historyRecorder.Received(1).RecordAsync(
             Arg.Is<IReadOnlyCollection<IDomainEvent>>(events => events.Count > 0),
             Arg.Any<CancellationToken>());
     }
