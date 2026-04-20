@@ -1,9 +1,9 @@
 using Ambev.DeveloperEvaluation.Application.Sales;
 using Ambev.DeveloperEvaluation.Application.Sales.Common;
+using Ambev.DeveloperEvaluation.Domain.Events;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using AutoMapper;
 using MediatR;
-using Microsoft.Extensions.Logging;
 
 namespace Ambev.DeveloperEvaluation.Application.Sales.AddItemToSale;
 
@@ -11,16 +11,16 @@ public sealed class AddItemToSaleHandler : IRequestHandler<AddItemToSaleCommand,
 {
     private readonly ISaleRepository _saleRepository;
     private readonly IMapper _mapper;
-    private readonly ILogger<AddItemToSaleHandler> _logger;
+    private readonly ISaleEventPublisher _eventPublisher;
 
     public AddItemToSaleHandler(
         ISaleRepository saleRepository,
         IMapper mapper,
-        ILogger<AddItemToSaleHandler> logger)
+        ISaleEventPublisher eventPublisher)
     {
         _saleRepository = saleRepository;
         _mapper = mapper;
-        _logger = logger;
+        _eventPublisher = eventPublisher;
     }
 
     public async Task<SaleResponse> Handle(AddItemToSaleCommand request, CancellationToken cancellationToken)
@@ -33,7 +33,9 @@ public sealed class AddItemToSaleHandler : IRequestHandler<AddItemToSaleCommand,
 
         await _saleRepository.UpdateAsync(sale, cancellationToken);
 
-        SimulatedSalesEventBroker.PublishAndClear(_logger, sale);
+        IReadOnlyCollection<IDomainEvent> eventsSnapshot = sale.DomainEvents.ToArray();
+        await _eventPublisher.PublishAsync(eventsSnapshot, cancellationToken);
+        sale.ClearDomainEvents();
 
         return _mapper.Map<SaleResponse>(sale);
     }

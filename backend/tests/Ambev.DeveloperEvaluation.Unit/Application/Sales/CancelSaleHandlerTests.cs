@@ -1,12 +1,13 @@
+using Ambev.DeveloperEvaluation.Application.Sales;
 using Ambev.DeveloperEvaluation.Application.Sales.CancelSale;
 using Ambev.DeveloperEvaluation.Application.Sales.Common;
 using Ambev.DeveloperEvaluation.Domain.Entities;
+using Ambev.DeveloperEvaluation.Domain.Events;
 using Ambev.DeveloperEvaluation.Domain.Exceptions;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using Ambev.DeveloperEvaluation.Unit.Domain.Entities.TestData;
 using AutoMapper;
 using FluentAssertions;
-using Microsoft.Extensions.Logging;
 using NSubstitute;
 using Xunit;
 
@@ -16,12 +17,12 @@ public class CancelSaleHandlerTests
 {
     private readonly ISaleRepository _saleRepository = Substitute.For<ISaleRepository>();
     private readonly IMapper _mapper = Substitute.For<IMapper>();
-    private readonly ILogger<CancelSaleHandler> _logger = Substitute.For<ILogger<CancelSaleHandler>>();
+    private readonly ISaleEventPublisher _eventPublisher = Substitute.For<ISaleEventPublisher>();
     private readonly CancelSaleHandler _handler;
 
     public CancelSaleHandlerTests()
     {
-        _handler = new CancelSaleHandler(_saleRepository, _mapper, _logger);
+        _handler = new CancelSaleHandler(_saleRepository, _mapper, _eventPublisher);
     }
 
     [Fact]
@@ -54,12 +55,9 @@ public class CancelSaleHandlerTests
         sale.DomainEvents.Should().BeEmpty();
         await _saleRepository.Received(1).UpdateAsync(sale, Arg.Any<CancellationToken>());
         await _saleRepository.DidNotReceive().GetByIdReadOnlyAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
-        _logger.Received().Log(
-            LogLevel.Information,
-            Arg.Any<EventId>(),
-            Arg.Is<object>(state => state.ToString()!.Contains("Simulated broker publish SaleCancelled")),
-            Arg.Any<Exception>(),
-            Arg.Any<Func<object, Exception?, string>>());
+        await _eventPublisher.Received(1).PublishAsync(
+            Arg.Is<IReadOnlyCollection<IDomainEvent>>(events => events.Count > 0),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]

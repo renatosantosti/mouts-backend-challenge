@@ -1,10 +1,10 @@
 using Ambev.DeveloperEvaluation.Application.Sales;
 using Ambev.DeveloperEvaluation.Application.Sales.Common;
 using Ambev.DeveloperEvaluation.Domain.Exceptions;
+using Ambev.DeveloperEvaluation.Domain.Events;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using AutoMapper;
 using MediatR;
-using Microsoft.Extensions.Logging;
 
 namespace Ambev.DeveloperEvaluation.Application.Sales.CancelSaleItem;
 
@@ -12,16 +12,16 @@ public sealed class CancelSaleItemHandler : IRequestHandler<CancelSaleItemComman
 {
     private readonly ISaleRepository _saleRepository;
     private readonly IMapper _mapper;
-    private readonly ILogger<CancelSaleItemHandler> _logger;
+    private readonly ISaleEventPublisher _eventPublisher;
 
     public CancelSaleItemHandler(
         ISaleRepository saleRepository,
         IMapper mapper,
-        ILogger<CancelSaleItemHandler> logger)
+        ISaleEventPublisher eventPublisher)
     {
         _saleRepository = saleRepository;
         _mapper = mapper;
-        _logger = logger;
+        _eventPublisher = eventPublisher;
     }
 
     public async Task<SaleResponse> Handle(CancelSaleItemCommand request, CancellationToken cancellationToken)
@@ -43,7 +43,9 @@ public sealed class CancelSaleItemHandler : IRequestHandler<CancelSaleItemComman
 
         await _saleRepository.UpdateAsync(sale, cancellationToken);
 
-        SimulatedSalesEventBroker.PublishAndClear(_logger, sale);
+        IReadOnlyCollection<IDomainEvent> eventsSnapshot = sale.DomainEvents.ToArray();
+        await _eventPublisher.PublishAsync(eventsSnapshot, cancellationToken);
+        sale.ClearDomainEvents();
 
         return _mapper.Map<SaleResponse>(sale);
     }
