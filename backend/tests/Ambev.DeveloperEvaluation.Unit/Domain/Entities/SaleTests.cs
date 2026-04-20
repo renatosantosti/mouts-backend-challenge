@@ -12,7 +12,17 @@ public class SaleTests
     [Fact]
     public void Create_WithEmptySaleNumber_ShouldThrow()
     {
-        var act = () => Sale.Create("  ", DateTime.UtcNow, Guid.NewGuid(), "C", Guid.NewGuid(), "B");
+        var data = SaleTestData.GenerateCreateSaleCommand(
+            saleNumber: "  ",
+            customerName: "C",
+            branchName: "B");
+        var act = () => Sale.Create(
+            data.SaleNumber,
+            data.Date,
+            data.CustomerId,
+            data.CustomerName,
+            data.BranchId,
+            data.BranchName);
         act.Should().Throw<DomainException>().WithMessage("*Sale number*");
     }
 

@@ -30,7 +30,11 @@ public class AddItemToSaleHandlerTests
         _saleRepository.GetByIdForUpdateAsync(saleId, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<Sale?>(null));
 
-        var command = new AddItemToSaleCommand(saleId, Guid.NewGuid(), "Product", 1, 10m);
+        var command = SaleTestData.GenerateAddItemToSaleCommand(
+            saleId: saleId,
+            productName: "Product",
+            quantity: 1,
+            unitPrice: 10m);
 
         var act = () => _handler.Handle(command, CancellationToken.None);
 
@@ -50,7 +54,12 @@ public class AddItemToSaleHandlerTests
             .Returns(Task.FromResult(sale));
         _mapper.Map<SaleResponse>(Arg.Any<Sale>()).Returns(new SaleResponse { Id = sale.Id });
 
-        var command = new AddItemToSaleCommand(sale.Id, productId, "New Name", 3, 12m);
+        var command = SaleTestData.GenerateAddItemToSaleCommand(
+            saleId: sale.Id,
+            productId: productId,
+            productName: "New Name",
+            quantity: 3,
+            unitPrice: 12m);
 
         await _handler.Handle(command, CancellationToken.None);
 
@@ -73,7 +82,12 @@ public class AddItemToSaleHandlerTests
         _saleRepository.GetByIdForUpdateAsync(sale.Id, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<Sale?>(sale));
 
-        var command = new AddItemToSaleCommand(sale.Id, productId, "Product", 1, 10m);
+        var command = SaleTestData.GenerateAddItemToSaleCommand(
+            saleId: sale.Id,
+            productId: productId,
+            productName: "Product",
+            quantity: 1,
+            unitPrice: 10m);
 
         var act = () => _handler.Handle(command, CancellationToken.None);
 
@@ -90,7 +104,11 @@ public class AddItemToSaleHandlerTests
         _saleRepository.GetByIdForUpdateAsync(sale.Id, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<Sale?>(sale));
 
-        var command = new AddItemToSaleCommand(sale.Id, Guid.NewGuid(), "Product", 1, 10m);
+        var command = SaleTestData.GenerateAddItemToSaleCommand(
+            saleId: sale.Id,
+            productName: "Product",
+            quantity: 1,
+            unitPrice: 10m);
 
         var act = () => _handler.Handle(command, CancellationToken.None);
 

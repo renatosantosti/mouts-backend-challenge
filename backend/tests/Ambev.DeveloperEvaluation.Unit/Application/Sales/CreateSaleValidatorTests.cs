@@ -1,4 +1,5 @@
 using Ambev.DeveloperEvaluation.Application.Sales.CreateSale;
+using Ambev.DeveloperEvaluation.Unit.Domain.Entities.TestData;
 using FluentAssertions;
 using Xunit;
 
@@ -10,7 +11,12 @@ public class CreateSaleValidatorTests
     public async Task Validate_InvalidCommand_HasErrors()
     {
         var validator = new CreateSaleValidator();
-        var command = new CreateSaleCommand(string.Empty, DateTime.UtcNow, Guid.Empty, "", Guid.Empty, "");
+        var command = SaleTestData.GenerateCreateSaleCommand(
+            saleNumber: string.Empty,
+            customerId: Guid.Empty,
+            customerName: string.Empty,
+            branchId: Guid.Empty,
+            branchName: string.Empty);
 
         var result = await validator.ValidateAsync(command);
 

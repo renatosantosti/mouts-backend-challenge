@@ -74,19 +74,29 @@ public class CreateUserHandlerTests
     }
 
     /// <summary>
-    /// Tests that an invalid user creation request throws a validation exception.
+    /// Tests that a duplicated email is rejected by the handler.
     /// </summary>
-    [Fact(DisplayName = "Given invalid user data When creating user Then throws validation exception")]
-    public async Task Handle_InvalidRequest_ThrowsValidationException()
+    [Fact(DisplayName = "Given duplicated email When creating user Then throws invalid operation exception")]
+    public async Task Handle_DuplicatedEmail_ThrowsInvalidOperationException()
     {
         // Given
-        var command = new CreateUserCommand(); // Empty command will fail validation
+        var command = CreateUserHandlerTestData.GenerateValidCommand();
+        var existingUser = new User
+        {
+            Id = Guid.NewGuid(),
+            Email = command.Email
+        };
+
+        _userRepository
+            .GetByEmailAsync(command.Email, Arg.Any<CancellationToken>())
+            .Returns(existingUser);
 
         // When
         var act = () => _handler.Handle(command, CancellationToken.None);
 
         // Then
-        await act.Should().ThrowAsync<FluentValidation.ValidationException>();
+        await act.Should().ThrowAsync<InvalidOperationException>();
+        await _userRepository.DidNotReceive().CreateAsync(Arg.Any<User>(), Arg.Any<CancellationToken>());
     }
 
     /// <summary>

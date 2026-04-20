@@ -2,7 +2,6 @@ using System.Linq;
 using Ambev.DeveloperEvaluation.Application.Sales.CancelSaleItem;
 using Ambev.DeveloperEvaluation.Application.Sales.Common;
 using Ambev.DeveloperEvaluation.Domain.Entities;
-using Ambev.DeveloperEvaluation.Domain.Exceptions;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using Ambev.DeveloperEvaluation.Unit.Domain.Entities.TestData;
 using AutoMapper;
@@ -60,7 +59,7 @@ public class CancelSaleItemHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenItemIdUnknown_ThrowsDomainException_AndDoesNotUpdate()
+    public async Task Handle_WhenItemIdUnknown_ThrowsKeyNotFoundException_AndDoesNotUpdate()
     {
         var sale = SaleTestData.CreateValidSale();
         sale.AddItem(Guid.NewGuid(), "Product", 1, 10m);
@@ -70,7 +69,7 @@ public class CancelSaleItemHandlerTests
 
         var act = () => _handler.Handle(new CancelSaleItemCommand(sale.Id, Guid.NewGuid()), CancellationToken.None);
 
-        await act.Should().ThrowAsync<DomainException>();
+        await act.Should().ThrowAsync<KeyNotFoundException>();
         await _saleRepository.DidNotReceive().UpdateAsync(Arg.Any<Sale>(), Arg.Any<CancellationToken>());
     }
 }

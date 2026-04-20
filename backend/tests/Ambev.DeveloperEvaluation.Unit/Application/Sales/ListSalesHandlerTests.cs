@@ -22,12 +22,24 @@ public class ListSalesHandlerTests
     }
 
     [Fact]
-    public async Task Handle_InvalidQuery_ThrowsValidationException()
+    public async Task Handle_InvalidQuery_ClampsPaginationAndCallsRepository()
     {
-        var act = () => _handler.Handle(new ListSalesQuery(Page: 0, Size: 10), CancellationToken.None);
+        var items = new List<Sale>();
+        const int totalCount = 0;
 
-        await act.Should().ThrowAsync<FluentValidation.ValidationException>();
-        await _saleRepository.DidNotReceive().ListAsync(Arg.Any<SaleListQuery>(), Arg.Any<CancellationToken>());
+        _saleRepository
+            .ListAsync(
+                Arg.Is<SaleListQuery>(q => q.Page == 0 && q.Size == 10),
+                Arg.Any<CancellationToken>())
+            .Returns((items, totalCount));
+
+        _mapper.Map<IReadOnlyList<SaleResponse>>(items).Returns(new List<SaleResponse>());
+
+        var result = await _handler.Handle(new ListSalesQuery(Page: 0, Size: 10), CancellationToken.None);
+
+        result.Page.Should().Be(1);
+        result.Size.Should().Be(10);
+        await _saleRepository.Received(1).ListAsync(Arg.Any<SaleListQuery>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

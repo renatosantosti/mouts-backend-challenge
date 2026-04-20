@@ -1,7 +1,9 @@
 using Ambev.DeveloperEvaluation.Application.Sales.Common;
 using Ambev.DeveloperEvaluation.Application.Sales.CreateSale;
 using Ambev.DeveloperEvaluation.Domain.Entities;
+using Ambev.DeveloperEvaluation.Domain.Exceptions;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
+using Ambev.DeveloperEvaluation.Unit.Domain.Entities.TestData;
 using AutoMapper;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -24,13 +26,7 @@ public class CreateSaleHandlerTests
     [Fact]
     public async Task Handle_ValidCommand_PersistsAndReturnsMappedSale()
     {
-        var command = new CreateSaleCommand(
-            "SALE-UNIT-1",
-            DateTime.UtcNow,
-            Guid.NewGuid(),
-            "Customer",
-            Guid.NewGuid(),
-            "Branch");
+        var command = SaleTestData.GenerateCreateSaleCommand(saleNumber: "SALE-UNIT-1");
 
         var expected = new SaleResponse { Id = Guid.NewGuid(), SaleNumber = command.SaleNumber };
 
@@ -47,12 +43,17 @@ public class CreateSaleHandlerTests
     }
 
     [Fact]
-    public async Task Handle_InvalidCommand_ThrowsValidationException()
+    public async Task Handle_InvalidCommand_ThrowsDomainException()
     {
-        var command = new CreateSaleCommand(string.Empty, DateTime.UtcNow, Guid.Empty, "", Guid.Empty, "");
+        var command = SaleTestData.GenerateCreateSaleCommand(
+            saleNumber: string.Empty,
+            customerId: Guid.Empty,
+            customerName: string.Empty,
+            branchId: Guid.Empty,
+            branchName: string.Empty);
 
         var act = () => _handler.Handle(command, CancellationToken.None);
 
-        await act.Should().ThrowAsync<FluentValidation.ValidationException>();
+        await act.Should().ThrowAsync<DomainException>();
     }
 }
