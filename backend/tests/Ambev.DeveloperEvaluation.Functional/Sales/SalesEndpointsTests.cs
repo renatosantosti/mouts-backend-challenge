@@ -44,7 +44,7 @@ public sealed class SalesEndpointsTests : IClassFixture<SalesApiFactory>
 
     public SalesEndpointsTests(SalesApiFactory factory)
     {
-        _client = factory.CreateClient();
+        _client = factory.CreateAuthenticatedClient();
     }
 
     // Create/Get

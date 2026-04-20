@@ -19,10 +19,12 @@ public sealed class AuthEndpointsTests : IClassFixture<SalesApiFactory>
         UserRole Role);
 
     private readonly HttpClient _client;
+    private readonly HttpClient _authenticatedClient;
 
     public AuthEndpointsTests(SalesApiFactory factory)
     {
         _client = factory.CreateClient();
+        _authenticatedClient = factory.CreateAuthenticatedClient();
     }
 
     [Fact]
@@ -30,7 +32,7 @@ public sealed class AuthEndpointsTests : IClassFixture<SalesApiFactory>
     {
         var password = "P@ssw0rd!234";
         var userRequest = BuildCreateUserRequest(password: password);
-        var createResponse = await _client.PostAsJsonAsync("/api/users", userRequest);
+        var createResponse = await _authenticatedClient.PostAsJsonAsync("/api/users", userRequest);
         var createBody = await createResponse.Content.ReadAsStringAsync();
         createResponse.StatusCode.Should().Be(HttpStatusCode.Created, $"response body: {createBody}");
 
@@ -68,7 +70,7 @@ public sealed class AuthEndpointsTests : IClassFixture<SalesApiFactory>
     {
         var password = "P@ssw0rd!234";
         var userRequest = BuildCreateUserRequest(password: password);
-        var createResponse = await _client.PostAsJsonAsync("/api/users", userRequest);
+        var createResponse = await _authenticatedClient.PostAsJsonAsync("/api/users", userRequest);
         var createBody = await createResponse.Content.ReadAsStringAsync();
         createResponse.StatusCode.Should().Be(HttpStatusCode.Created, $"response body: {createBody}");
 

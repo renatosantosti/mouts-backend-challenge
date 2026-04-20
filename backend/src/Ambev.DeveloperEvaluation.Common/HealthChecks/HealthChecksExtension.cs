@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -67,21 +68,21 @@ public static class HealthChecksExtension
     /// Each endpoint uses custom options configured by the WriteHealthCheckResponse method.
     /// </remarks>
     /// <example>
-    /// This method can be used in the Configure method of Startup.cs or in Program.cs:
+    /// This method can be used in Program.cs after <c>UseAuthorization</c>:
     /// <code>
-    /// app.UseBasicHealthChecks();
+    /// app.MapBasicHealthChecks();
     /// </code>
     /// </example>
-    public static void UseBasicHealthChecks(this WebApplication app)
+    public static void MapBasicHealthChecks(this WebApplication app)
     {
         var livenessOptions = WriteHealtCheckRespose(app, "liveness");
-        app.UseHealthChecks("/health/live", livenessOptions);
+        app.MapHealthChecks("/health/live", livenessOptions).AllowAnonymous();
 
         var readinessOptions = WriteHealtCheckRespose(app, "readiness");
-        app.UseHealthChecks("/health/ready", readinessOptions);
+        app.MapHealthChecks("/health/ready", readinessOptions).AllowAnonymous();
 
         var healthOptions = WriteHealtCheckRespose(app, string.Empty);
-        app.UseHealthChecks("/health", healthOptions);
+        app.MapHealthChecks("/health", healthOptions).AllowAnonymous();
 
         var logger = app.Services.GetRequiredService<ILogger<HealthCheckService>>();
         logger.LogInformation("Health Check enabled at: '/health'");

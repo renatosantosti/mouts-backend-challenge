@@ -140,8 +140,26 @@ Use this runbook to execute the backend stack (WebApi + PostgreSQL + MongoDB + R
    - API routes are under `/api/...` (example: `http://localhost:8080/api/sales`)
    - Note: `http://localhost:8080/` may return 404 because there is no mapped homepage route.
    - If Swagger does not load, confirm the WebApi container is running with `ASPNETCORE_ENVIRONMENT=Development` (the dev compose stack should).
-6. Stop and remove containers:
+6. **Development bootstrap user and JWT (Docker / Development only)**  
+   On first startup in **Development**, the WebApi seeds a single user if one with the seed e-mail does not exist yet. The e-mail and password are defined in code as constants on the class **`DevelopmentAuthSeed`** in the backend Common project:
+   - Source: [`backend/src/Ambev.DeveloperEvaluation.Common/Security/DevelopmentAuthSeed.cs`](backend/src/Ambev.DeveloperEvaluation.Common/Security/DevelopmentAuthSeed.cs) (`Ambev.DeveloperEvaluation.Common.Security.DevelopmentAuthSeed`)
+   - Default values: **`DevelopmentAuthSeed.Email`** = `dev@local.test`, **`DevelopmentAuthSeed.Password`** = `DevSeed_P@ssw0rd!`  
+   Treat these as **local/dev credentials only**. They are not intended for production; the seed runs only when `ASPNETCORE_ENVIRONMENT=Development` (as in this Compose stack).
+7. **Calling protected routes and Swagger**  
+   - Almost all HTTP API endpoints require a **JWT** (`Authorization: Bearer <token>`). The public exception is **`POST /api/Auth`** (login).  
+   - In Swagger UI, use **`POST /api/Auth`** with the seed e-mail/password to obtain a token, then click **Authorize**, choose the Bearer scheme, and enter `Bearer <your_token>` (or only the token, depending on Swagger UI version).  
+   - Endpoints that require auth show a lock icon; unlocked routes are those marked anonymous (login).
+8. Stop and remove containers:
    - `docker compose --env-file backend/.env.development -f backend/docker-compose.yml -f backend/docker-compose.override.yml down`
+
+### Authentication and authorization (summary)
+
+| Topic | Behavior |
+| --- | --- |
+| Public route | `POST /api/Auth` (no JWT required). |
+| Other routes | Require a valid JWT (global fallback authorization policy). |
+| Dev seed user | Created automatically in Development using `DevelopmentAuthSeed` constants (see step 6 under Docker Compose). |
+| Changing dev credentials | Update `DevelopmentAuthSeed` and restart the WebApi so the seed logic can align with your local workflow (or create additional users via `POST /api/users` while authenticated as the seed user). |
 
 ### 2) Production-like Execution
 
@@ -165,7 +183,8 @@ Use this flow for local production-like validation with Compose (not a full prod
    - `docker compose --env-file backend/.env.development -f backend/docker-compose.yml -f backend/docker-compose.override.yml ps`
    - Expected result: `ambev.developerevaluation.webapi` is `healthy`.
 3. Run integration tests:
-   - `dotnet test backend/tests/Ambev.DeveloperEvaluation.Integration/Ambev.DeveloperEvaluation.Integration.csproj`
+   - `dotnet test backend/tests/Ambev.DeveloperEvaluation.Integration/Ambev.DeveloperEvaluation.Integration.csproj`  
+   The integration harness logs in with the same **Development** seed user (`DevelopmentAuthSeed.Email` / `DevelopmentAuthSeed.Password`) and sends `Authorization: Bearer` on subsequent requests, so the stack must have completed migrations and seed at least once while healthy.
 4. Stop and clean containers:
    - `docker compose --env-file backend/.env.development -f backend/docker-compose.yml -f backend/docker-compose.override.yml down`
 
@@ -175,5 +194,6 @@ Use this flow for local production-like validation with Compose (not a full prod
   - `docker compose --env-file backend/.env.development -f backend/docker-compose.yml -f backend/docker-compose.override.yml logs ambev.developerevaluation.webapi`
 - If integration tests fail due to startup race conditions, rerun after confirming all services are healthy in `ps`.
 - If the browser shows 404 on `/` but the container is healthy, use `/swagger` or `/health` instead (root is not mapped).
+- If API calls return **401 Unauthorized**, obtain a JWT via `POST /api/Auth` with the Development seed credentials (see `DevelopmentAuthSeed`) and send `Authorization: Bearer <token>` on protected routes.
 - `docker-compose.yml` is parameterized and should not contain hardcoded secrets.
 - ASP.NET Core environment variables (for example `ConnectionStrings__DefaultConnection`, `Mongo__ConnectionString`) override `appsettings.json`.

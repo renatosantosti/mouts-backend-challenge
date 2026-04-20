@@ -23,7 +23,7 @@ public sealed class UsersEndpointsTests : IClassFixture<SalesApiFactory>
 
     public UsersEndpointsTests(SalesApiFactory factory)
     {
-        _client = factory.CreateClient();
+        _client = factory.CreateAuthenticatedClient();
     }
 
     [Fact]

@@ -1,4 +1,8 @@
 using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text.Json;
+using Ambev.DeveloperEvaluation.Common.Security;
 using Ambev.DeveloperEvaluation.ORM;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -56,6 +60,52 @@ public sealed class ComposeHttpFixture : IAsyncLifetime
     {
         await WaitUntilHealthyAsync();
         await EnsurePostgresMigrationsAsync();
+        await AuthenticateWithDevelopmentSeedAsync();
+    }
+
+    private async Task AuthenticateWithDevelopmentSeedAsync()
+    {
+        using var response = await Client.PostAsJsonAsync(
+            "/api/auth",
+            new { email = DevelopmentAuthSeed.Email, password = DevelopmentAuthSeed.Password });
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync();
+            throw new InvalidOperationException(
+                $"Integration login failed: {(int)response.StatusCode} {response.StatusCode}. Body: {body}");
+        }
+
+        var loginBody = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(loginBody);
+        var token = TryGetAuthToken(doc.RootElement)
+            ?? throw new InvalidOperationException($"Login response missing token. Body: {loginBody}");
+
+        Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+    }
+
+    private static string? TryGetAuthToken(JsonElement root)
+    {
+        if (!TryGetPropertyIgnoreCase(root, "data", out var data))
+            return null;
+
+        if (TryGetPropertyIgnoreCase(data, "token", out var tokenEl))
+            return tokenEl.GetString();
+
+        if (TryGetPropertyIgnoreCase(data, "data", out var inner) &&
+            TryGetPropertyIgnoreCase(inner, "token", out tokenEl))
+            return tokenEl.GetString();
+
+        return null;
+    }
+
+    private static bool TryGetPropertyIgnoreCase(JsonElement element, string name, out JsonElement value)
+    {
+        if (element.TryGetProperty(name, out value))
+            return true;
+
+        var pascal = char.ToUpperInvariant(name[0]) + name[1..];
+        return element.TryGetProperty(pascal, out value);
     }
 
     private static async Task EnsurePostgresMigrationsAsync()
