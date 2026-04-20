@@ -16,7 +16,7 @@ namespace Ambev.DeveloperEvaluation.WebApi;
 
 public class Program
 {
-    public static void Main(string[] args)
+    public static async Task Main(string[] args)
     {
         try
         {
@@ -60,6 +60,15 @@ public class Program
             builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
             var app = builder.Build();
+
+            if (app.Environment.IsDevelopment())
+            {
+                Log.Information("Applying database migrations...");
+                await using var scope = app.Services.CreateAsyncScope();
+                var db = scope.ServiceProvider.GetRequiredService<DefaultContext>();
+                await db.Database.MigrateAsync();
+            }
+
             app.UseMiddleware<ApiExceptionMiddleware>();
 
             if (app.Environment.IsDevelopment())
@@ -77,7 +86,7 @@ public class Program
 
             app.MapControllers();
 
-            app.Run();
+            await app.RunAsync();
         }
         catch (Exception ex)
         {
