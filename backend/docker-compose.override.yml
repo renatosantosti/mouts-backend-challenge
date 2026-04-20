@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  ambev.developerevaluation.webapi:
+    env_file:
+      - .env.development
+
+  ambev.developerevaluation.database:
+    env_file:
+      - .env.development
+
+  ambev.developerevaluation.nosql:
+    env_file:
+      - .env.development
+
+  ambev.developerevaluation.cache:
+    env_file:
+      - .env.development

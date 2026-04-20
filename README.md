@@ -113,3 +113,23 @@ This section includes links to the detailed documentation for the different API 
 This section describes the overall structure and organization of the project files and directories. 
 
 See [Project Structure](/.doc/project-structure.md)
+
+## Running with Docker Compose (Development)
+
+Use this flow to run the complete backend stack (WebApi + PostgreSQL + MongoDB + Redis) with environment variables.
+
+1. Create your development env file from the example:
+   - PowerShell:
+     - `Copy-Item backend/.env.example backend/.env.development`
+2. Update secrets and local values in `backend/.env.development`.
+   - If your Mongo password contains special characters, keep `MONGO_PASSWORD_ENCODED` URL-encoded.
+3. Start the stack with the development compose layer:
+   - `docker compose --env-file backend/.env.development -f backend/docker-compose.yml -f backend/docker-compose.override.yml up --build`
+4. Stop and remove containers:
+   - `docker compose --env-file backend/.env.development -f backend/docker-compose.yml -f backend/docker-compose.override.yml down`
+
+Notes:
+- `docker-compose.yml` is parameterized and does not keep hardcoded passwords.
+- `docker-compose.override.yml` is the development layer and points services to `backend/.env.development`.
+- ASP.NET Core reads variables like `ConnectionStrings__DefaultConnection` and `Mongo__ConnectionString`, overriding values from `appsettings.json`.
+- `backend/src/Ambev.DeveloperEvaluation.WebApi/appsettings.json` keeps only non-sensitive placeholders for connection strings and JWT secret.
