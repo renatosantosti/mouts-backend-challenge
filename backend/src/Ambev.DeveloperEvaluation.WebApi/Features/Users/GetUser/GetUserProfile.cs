@@ -3,7 +3,7 @@ using AutoMapper;
 namespace Ambev.DeveloperEvaluation.WebApi.Features.Users.GetUser;
 
 /// <summary>
-/// Profile for mapping GetUser feature requests to commands
+/// Profile for mapping GetUser feature requests to queries
 /// </summary>
 public class GetUserProfile : Profile
 {
@@ -12,7 +12,7 @@ public class GetUserProfile : Profile
     /// </summary>
     public GetUserProfile()
     {
-        CreateMap<Guid, Application.Users.GetUser.GetUserCommand>()
-            .ConstructUsing(id => new Application.Users.GetUser.GetUserCommand(id));
+        CreateMap<Guid, Application.Users.GetUser.GetUserQuery>()
+            .ConstructUsing(id => new Application.Users.GetUser.GetUserQuery(id));
     }
 }

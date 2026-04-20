@@ -79,8 +79,8 @@ public class UsersController : BaseController
         if (!validationResult.IsValid)
             return BadRequest(validationResult.Errors);
 
-        var command = _mapper.Map<GetUserCommand>(request.Id);
-        var response = await _mediator.Send(command, cancellationToken);
+        var query = _mapper.Map<GetUserQuery>(request.Id);
+        var response = await _mediator.Send(query, cancellationToken);
 
         return Ok(new ApiResponseWithData<GetUserResponse>
         {

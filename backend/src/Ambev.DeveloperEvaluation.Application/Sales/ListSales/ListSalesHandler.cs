@@ -1,7 +1,6 @@
 using Ambev.DeveloperEvaluation.Application.Sales.Common;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using AutoMapper;
-using FluentValidation;
 using MediatR;
 
 namespace Ambev.DeveloperEvaluation.Application.Sales.ListSales;
@@ -19,11 +18,6 @@ public sealed class ListSalesHandler : IRequestHandler<ListSalesQuery, ListSales
 
     public async Task<ListSalesResult> Handle(ListSalesQuery request, CancellationToken cancellationToken)
     {
-        var validator = new ListSalesValidator();
-        var validationResult = await validator.ValidateAsync(request, cancellationToken);
-        if (!validationResult.IsValid)
-            throw new ValidationException(validationResult.Errors);
-
         var domainQuery = new SaleListQuery
         {
             Page = request.Page,
