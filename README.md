@@ -114,22 +114,59 @@ This section describes the overall structure and organization of the project fil
 
 See [Project Structure](/.doc/project-structure.md)
 
-## Running with Docker Compose (Development)
+## Running the System
 
-Use this flow to run the complete backend stack (WebApi + PostgreSQL + MongoDB + Redis) with environment variables.
+Use this runbook to execute the backend stack (WebApi + PostgreSQL + MongoDB + Redis) consistently across development, production-like runs, and integration tests.
+
+### Prerequisites
+
+1. Install Docker and Docker Compose.
+2. Install .NET SDK 8.0 (required for local test execution).
+3. Ensure ports `8080`, `5432`, `27017`, and `6379` are available locally.
+
+### 1) Development Environment (Docker Compose)
 
 1. Create your development env file from the example:
-   - PowerShell:
-     - `Copy-Item backend/.env.example backend/.env.development`
-2. Update secrets and local values in `backend/.env.development`.
-   - If your Mongo password contains special characters, keep `MONGO_PASSWORD_ENCODED` URL-encoded.
-3. Start the stack with the development compose layer:
-   - `docker compose --env-file backend/.env.development -f backend/docker-compose.yml -f backend/docker-compose.override.yml up --build`
-4. Stop and remove containers:
+   - PowerShell: `Copy-Item backend/.env.example backend/.env.development`
+2. Update local values/secrets in `backend/.env.development`.
+3. Start the stack:
+   - `docker compose --env-file backend/.env.development -f backend/docker-compose.yml -f backend/docker-compose.override.yml up -d --build`
+4. Verify service health:
+   - `docker compose --env-file backend/.env.development -f backend/docker-compose.yml -f backend/docker-compose.override.yml ps`
+   - Expected result: `ambev.developerevaluation.webapi` is `healthy`.
+5. Stop and remove containers:
    - `docker compose --env-file backend/.env.development -f backend/docker-compose.yml -f backend/docker-compose.override.yml down`
 
-Notes:
-- `docker-compose.yml` is parameterized and does not keep hardcoded passwords.
-- `docker-compose.override.yml` is the development layer and points services to `backend/.env.development`.
-- ASP.NET Core reads variables like `ConnectionStrings__DefaultConnection` and `Mongo__ConnectionString`, overriding values from `appsettings.json`.
-- `backend/src/Ambev.DeveloperEvaluation.WebApi/appsettings.json` keeps only non-sensitive placeholders for connection strings and JWT secret.
+### 2) Production-like Execution
+
+Use this flow for local production-like validation with Compose (not a full production deployment guide).
+
+1. Provide environment values through a dedicated file (for example `backend/.env.production`) and keep secrets outside source control.
+2. Start the stack in detached mode:
+   - `docker compose --env-file backend/.env.production -f backend/docker-compose.yml -f backend/docker-compose.override.yml up -d --build`
+3. Verify service status and health:
+   - `docker compose --env-file backend/.env.production -f backend/docker-compose.yml -f backend/docker-compose.override.yml ps`
+4. Inspect runtime logs when needed:
+   - `docker compose --env-file backend/.env.production -f backend/docker-compose.yml -f backend/docker-compose.override.yml logs ambev.developerevaluation.webapi`
+5. Stop the stack:
+   - `docker compose --env-file backend/.env.production -f backend/docker-compose.yml -f backend/docker-compose.override.yml down`
+
+### 3) Running Integration Tests
+
+1. Start the stack:
+   - `docker compose --env-file backend/.env.development -f backend/docker-compose.yml -f backend/docker-compose.override.yml up -d --build`
+2. Wait until WebApi is healthy:
+   - `docker compose --env-file backend/.env.development -f backend/docker-compose.yml -f backend/docker-compose.override.yml ps`
+   - Expected result: `ambev.developerevaluation.webapi` is `healthy`.
+3. Run integration tests:
+   - `dotnet test backend/tests/Ambev.DeveloperEvaluation.Integration/Ambev.DeveloperEvaluation.Integration.csproj`
+4. Stop and clean containers:
+   - `docker compose --env-file backend/.env.development -f backend/docker-compose.yml -f backend/docker-compose.override.yml down`
+
+### Troubleshooting
+
+- If WebApi does not become `healthy`, check logs first:
+  - `docker compose --env-file backend/.env.development -f backend/docker-compose.yml -f backend/docker-compose.override.yml logs ambev.developerevaluation.webapi`
+- If integration tests fail due to startup race conditions, rerun after confirming all services are healthy in `ps`.
+- `docker-compose.yml` is parameterized and should not contain hardcoded secrets.
+- ASP.NET Core environment variables (for example `ConnectionStrings__DefaultConnection`, `Mongo__ConnectionString`) override `appsettings.json`.

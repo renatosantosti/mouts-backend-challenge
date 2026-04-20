@@ -18,7 +18,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_HTTP_PORTS=8080
       - ConnectionStrings__DefaultConnection=Host=${POSTGRES_HOST};Port=${POSTGRES_PORT};Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
-      - Mongo__ConnectionString=mongodb://${MONGO_USER}:${MONGO_PASSWORD_ENCODED}@${MONGO_HOST}:${MONGO_PORT}
+      - Mongo__ConnectionString=mongodb://${MONGO_USER}:${MONGO_PASSWORD_ENCODED}@${MONGO_HOST}:${MONGO_PORT}/?authSource=admin
       - Mongo__DatabaseName=${MONGO_DATABASE}
       - Mongo__SalesHistoryCollectionName=${MONGO_SALES_HISTORY_COLLECTION}
     ports:
