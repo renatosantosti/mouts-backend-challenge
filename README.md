@@ -134,7 +134,13 @@ Use this runbook to execute the backend stack (WebApi + PostgreSQL + MongoDB + R
 4. Verify service health:
    - `docker compose --env-file backend/.env.development -f backend/docker-compose.yml -f backend/docker-compose.override.yml ps`
    - Expected result: `ambev.developerevaluation.webapi` is `healthy`.
-5. Stop and remove containers:
+5. Open the API in your browser:
+   - Swagger UI: `http://localhost:8080/swagger` (or `http://localhost:8080/swagger/index.html`)
+   - Health check: `http://localhost:8080/health`
+   - API routes are under `/api/...` (example: `http://localhost:8080/api/sales`)
+   - Note: `http://localhost:8080/` may return 404 because there is no mapped homepage route.
+   - If Swagger does not load, confirm the WebApi container is running with `ASPNETCORE_ENVIRONMENT=Development` (the dev compose stack should).
+6. Stop and remove containers:
    - `docker compose --env-file backend/.env.development -f backend/docker-compose.yml -f backend/docker-compose.override.yml down`
 
 ### 2) Production-like Execution
@@ -168,5 +174,6 @@ Use this flow for local production-like validation with Compose (not a full prod
 - If WebApi does not become `healthy`, check logs first:
   - `docker compose --env-file backend/.env.development -f backend/docker-compose.yml -f backend/docker-compose.override.yml logs ambev.developerevaluation.webapi`
 - If integration tests fail due to startup race conditions, rerun after confirming all services are healthy in `ps`.
+- If the browser shows 404 on `/` but the container is healthy, use `/swagger` or `/health` instead (root is not mapped).
 - `docker-compose.yml` is parameterized and should not contain hardcoded secrets.
 - ASP.NET Core environment variables (for example `ConnectionStrings__DefaultConnection`, `Mongo__ConnectionString`) override `appsettings.json`.
